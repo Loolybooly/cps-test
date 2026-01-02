@@ -1,12 +1,13 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <!-- discord embed -->
   <meta property="og:title" content="Tunes CPS Test" />
   <meta property="og:description" content="Check how fast you click and share the results with friends!" />
-  <meta property="og:image" content="https://i.imgur.com/KZ9ciBB.png" />
+  <meta property="og:image" content="https://i.imgur.com/ecFpKmt.png" />
   <meta property="og:url" content="https://butteryclicks.vercel.app" />
   <meta property="og:type" content="website" />
   <link rel="icon" href="https://i.imgur.com/sPxq6s5.png" type="image/png">
@@ -15,27 +16,13 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Tunes CPS Test" />
   <meta name="twitter:description" content="Check how fast you click and share the results with friends!" />
-  <meta name="twitter:image" content="https://i.imgur.com/KZ9ciBB.png" />
+  <meta name="twitter:image" content="https://i.imgur.com/ecFpKmt.png" />
   <meta name="twitter:url" content="https://butteryclicks.vercel.app" />
   <meta name="twitter:site" content="@LoolyTunes" />
   <title>Better than cpstest.org</title>
-  <style>
-    :root { font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
-    body { margin: 0; background: #0b0b0c; color: #f3f3f3; display: grid; place-items: center; min-height: 100vh; }
-    .wrap { width: min(680px, 92vw); text-align: center; }
-    h1 { font-size: 1.5rem; margin-bottom: .75rem; opacity: .95; }
-    .controls { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; margin-bottom: .75rem; }
-    button { cursor: pointer; border: 0; padding: .7rem 1rem; border-radius: .9rem; background: #1b1c20; color: #fff; box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 10px 30px rgba(0,0,0,.35); }
-    button[disabled] { opacity: .5; cursor: not-allowed; }
-    #pad { width: 100%; height: 42vh; min-height: 260px; font-size: clamp(1.1rem, 3.8vw, 2rem); font-weight: 700; letter-spacing: .3px; user-select: none; -webkit-tap-highlight-color: transparent; }
-    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin: .75rem 0 1rem; }
-    .box { background: #111216; border: 1px solid #1e1f26; padding: .8rem; border-radius: .9rem; }
-    .label { font-size: .8rem; opacity: .7; }
-    .val { font-size: 1.4rem; font-weight: 800; margin-top: .2rem; }
-    .note { opacity: .6; font-size: .85rem; margin-top: .6rem; }
-    #sharePopup { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1b1c20; color: #fff; padding: .5rem 1rem; border-radius: .7rem; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div class="wrap">
     <h1>Test how fast you click and flex on your friends!</h1>
@@ -43,13 +30,29 @@
     <div class="controls">
       <button id="btn1">Start a 1 second test</button>
       <button id="btn5">Start a 5 second test</button>
+      <button id="expandBtn">Show more tests ▼</button>
+      <div id="extraTests" style="display: none;">
+        <button id="btn15">Start a 15 second test</button>
+        <button id="btn30">Start a 30 second test</button>
+        <button id="btn45">Start a 45 second test</button>
+        <button id="btn60">Start a 60 second test</button>
+      </div>
       <button id="reset" disabled>Restart</button>
     </div>
 
     <div class="stats">
-      <div class="box"><div class="label">Time Left</div><div class="val" id="time">0.00s</div></div>
-      <div class="box"><div class="label">Clicks until now</div><div class="val" id="clicks">0</div></div>
-      <div class="box"><div class="label">CPS</div><div class="val" id="cps">0.00</div></div>
+      <div class="box">
+        <div class="label">Time Left</div>
+        <div class="val" id="time">0.00s</div>
+      </div>
+      <div class="box">
+        <div class="label">Clicks until now</div>
+        <div class="val" id="clicks">0</div>
+      </div>
+      <div class="box">
+        <div class="label">CPS</div>
+        <div class="val" id="cps">0.00</div>
+      </div>
     </div>
 
     <button id="pad" disabled>Spam here!</button>
@@ -58,130 +61,14 @@
     <button id="share" disabled style="margin-top: .75rem;">Click this to copy your results!</button>
   </div>
 
-  <div id="sharePopup">Your results are copied! Go flex on your friends and reccomend them this website instead of stupid 'cpstest.org'</div>
+  <div id="sharePopup">Your results are copied! Go flex on your friends and reccomend them this website instead of
+    stupid
+    'cpstest.org'</div>
 
-  <script>
-    const btn1 = document.getElementById('btn1');
-    const btn5 = document.getElementById('btn5');
-    const reset = document.getElementById('reset');
-    const pad  = document.getElementById('pad');
-    const share = document.getElementById('share');
-    const timeEl = document.getElementById('time');
-    const clicksEl = document.getElementById('clicks');
-    const cpsEl = document.getElementById('cps');
-    const sharePopup = document.getElementById('sharePopup');
-
-    let duration = 0;
-    let testType = '';
-    let startAt = 0;
-    let clicks = 0;
-    let rafId = 0;
-    let endTimer = 0;
-    let running = false;
-    let armed = false;
-
-    function armTest(sec){
-      if(running || armed) return;
-      duration = sec;
-      testType = sec + 's';
-      clicks = 0;
-      clicksEl.textContent = '0';
-      timeEl.textContent = sec.toFixed(2) + 's';
-      cpsEl.textContent = '0.00';
-      armed = true;
-      pad.disabled = false;
-      reset.disabled = false;
-      share.disabled = true;
-    }
-
-    function startTest(){
-      running = true;
-      armed = false;
-      startAt = performance.now();
-
-      const tick = () => {
-        if(!running) return;
-        const elapsed = (performance.now() - startAt) / 1000;
-        const remaining = Math.max(0, duration - elapsed);
-        timeEl.textContent = remaining.toFixed(2) + 's';
-        cpsEl.textContent = (clicks / Math.max(elapsed, 0.001)).toFixed(2);
-        rafId = requestAnimationFrame(tick);
-      };
-      tick();
-
-      clearTimeout(endTimer);
-      endTimer = setTimeout(endTest, duration * 1000);
-    }
-
-    function endTest(){
-      if(!running) return;
-      running = false;
-      pad.disabled = true;
-      cancelAnimationFrame(rafId);
-      const elapsed = (performance.now() - startAt) / 1000;
-      timeEl.textContent = '0.00s';
-      cpsEl.textContent = (clicks / Math.max(elapsed, 0.001)).toFixed(2);
-      share.disabled = false;
-    }
-
-    function doReset(){
-      running = false;
-      armed = false;
-      pad.disabled = true;
-      cancelAnimationFrame(rafId);
-      clearTimeout(endTimer);
-      clicks = 0;
-      timeEl.textContent = '0.00s';
-      clicksEl.textContent = '0';
-      cpsEl.textContent = '0.00';
-      share.disabled = true;
-    }
-
-    pad.addEventListener('click', () => {
-      if(armed){
-        clicks = 1;
-        clicksEl.textContent = '1';
-        startTest();
-      } else if(running){
-        clicks++;
-        clicksEl.textContent = String(clicks);
-      }
-    });
-
-    window.addEventListener('keydown', (e) => {
-      if(e.code === 'Space'){
-        e.preventDefault();
-        pad.click();
-      }
-    });
-
-    window.addEventListener('keydown', (e) => {
-  if (e.code === 'Enter') {
-    e.preventDefault();
-    if (!running && !armed && testType) {
-      doReset();
-      armTest(parseFloat(testType));
-    }
-  }
-});
-
-    btn1.addEventListener('click', () => armTest(1));
-    btn5.addEventListener('click', () => armTest(5));
-    reset.addEventListener('click', doReset);
-
-    share.addEventListener('click', () => {
-      const text = `Test time: ${testType}, Times clicked: ${clicks}, Average CPS: ${cpsEl.textContent}`;
-      navigator.clipboard.writeText(text).then(() => {
-        sharePopup.style.opacity = '1';
-        setTimeout(() => sharePopup.style.opacity = '0', 6000);
-      });
-    });
-
-    pad.addEventListener('mousedown', e => e.preventDefault());
-  </script>
-            <div style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
-            <a href="https://tunes.is-a.dev" target="_blank" style="text-decoration: none;">
-                <button style="
+  <script src="main.js"></script>
+  <div style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+    <a href="https://tunes.is-a.dev" target="_blank" style="text-decoration: none;">
+      <button style="
                     background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #1e3a8a 50%, #073e96 75%, #025272 100%);
                     color: white;
                     border: none;
@@ -195,10 +82,13 @@
                     display: flex;
                     align-items: center;
                     gap: 8px;
-                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(30, 58, 138, 0.5), 0 0 35px rgba(59, 130, 246, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(30, 58, 138, 0.3), 0 0 25px rgba(59, 130, 246, 0.2)'">
-                    My socials and projects
-                </button>
-            </a>
-        </div>
+                "
+        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(30, 58, 138, 0.5), 0 0 35px rgba(59, 130, 246, 0.3)'"
+        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(30, 58, 138, 0.3), 0 0 25px rgba(59, 130, 246, 0.2)'">
+        My socials and projects
+      </button>
+    </a>
+  </div>
 </body>
+
 </html>
